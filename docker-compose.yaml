@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: whatsapp_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: whatsapp_user
+      POSTGRES_PASSWORD: whatsapp_pass
+      POSTGRES_DB: whatsappbot
+    ports:
+      - "5433:5432"   # ⬅ host:container (5433 on Mac, 5432 inside container)
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
