@@ -1,11 +1,7 @@
 from pydantic import BaseModel
 from typing import List
 
-
-class Member(BaseModel):
-    name: str
-    phone: str
-    paid: bool = False
+from models.member import Member
 
 
 class GroupEvent(BaseModel):
