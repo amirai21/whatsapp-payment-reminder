@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from db.db_models import Event, Member
+from db.db_models import Event, Member, Admin
 from services.whatsapp_utils import send_whatsapp_message
 from services.session_store import session_store
 from typing import List
@@ -56,10 +56,16 @@ def handle_add_members(from_number: str, body: str, db: Session):
     send_whatsapp_message(from_number,
         f"✅ נוספו {len(members)} משתתפים ל-*{event.title}* עד כה.\nשלח עוד או כתוב 'done' לסיום.")
 
+def notify_admin(event, member, db):
+    if event and event.admin_id:
+        admin = db.query(Admin).filter(Admin.id == event.admin_id).first()
+        if admin:
+            send_whatsapp_message(
+                f"whatsapp:{admin.phone}",
+                f"\u200Fℹ️ המשתתף {member.name} ({member.phone}) שילם עבור האירוע {event.title}.")
+
 def handle_mark_paid(from_number: str, db: Session):
     phone = from_number.replace("whatsapp:", "")
-
-    print(f"[LOG] Handling mark paid for {phone}")
 
     # ✅ Check if we have context (preferred event)
     event_context = session_store.get(phone, {}).get("awaiting_payment_for")
@@ -76,6 +82,7 @@ def handle_mark_paid(from_number: str, db: Session):
             event = db.query(Event).filter(Event.id == member.event_id).first()
             send_whatsapp_message(from_number,
                 f"✅ תודה {member.name}! סומן כשולם עבור *{event.title}*.")
+            notify_admin(event, member, db)
         else:
             send_whatsapp_message(from_number,
                 "⚠️ כבר סומנת כשולם עבור האירוע הזה.")
@@ -92,6 +99,7 @@ def handle_mark_paid(from_number: str, db: Session):
             event = db.query(Event).filter(Event.id == member.event_id).first()
             send_whatsapp_message(from_number,
                 f"✅ תודה {member.name}! סומן כשולם עבור *{event.title}*.")
+            notify_admin(event, member, db)
         else:
             event_titles = ", ".join([db.query(Event).filter(Event.id == m.event_id).first().title for m in unpaid])
             send_whatsapp_message(from_number,

@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from db.db_models import Event, Member
+from db.db_models import Event, Member, Admin
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timedelta
 import random
@@ -59,6 +59,15 @@ def handle_create_event(from_number: str, body: str, db: Session):
         # --- Unique event ID (phone + title) ---
         event_id = from_number.replace("whatsapp:", "") + "-" + title.lower()
 
+        # --- Admin lookup or creation ---
+        admin_phone = from_number.replace("whatsapp:", "")
+        admin = db.query(Admin).filter(Admin.phone == admin_phone).first()
+        if not admin:
+            admin = Admin(phone=admin_phone)
+            db.add(admin)
+            db.commit()
+            db.refresh(admin)
+
         # --- ✅ Insert new event ---
         new_event = Event(
             id=event_id,
@@ -66,7 +75,8 @@ def handle_create_event(from_number: str, body: str, db: Session):
             amount=amount,
             style=style,
             scheduler_interval=frequency_minutes,  # ⚠️ store minutes
-            start_time=start_time
+            start_time=start_time,
+            admin_id=admin.id
         )
         db.add(new_event)
         db.commit()

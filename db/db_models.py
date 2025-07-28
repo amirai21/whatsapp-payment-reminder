@@ -4,6 +4,11 @@ from datetime import datetime
 
 Base = declarative_base()
 
+class Admin(Base):
+    __tablename__ = "admins"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    phone = Column(String, unique=True, nullable=False)
+    events = relationship("Event", back_populates="admin")
 
 class Event(Base):
     __tablename__ = "events"
@@ -13,9 +18,9 @@ class Event(Base):
     style = Column(String)
     scheduler_interval = Column(Float, default=1.0)  # in hours
     start_time = Column(DateTime, default=datetime.utcnow)  # first reminder start time
-
+    admin_id = Column(Integer, ForeignKey("admins.id"), nullable=False)
+    admin = relationship("Admin", back_populates="events")
     members = relationship("Member", back_populates="event")
-
 
 class Member(Base):
     __tablename__ = "members"
@@ -25,3 +30,4 @@ class Member(Base):
     paid = Column(Boolean, default=False)
     event_id = Column(String, ForeignKey("events.id"))
     event = relationship("Event", back_populates="members")
+
