@@ -6,25 +6,7 @@ import random
 from fastapi import HTTPException
 from services.session_store import session_store
 from services.whatsapp_utils import send_whatsapp_message
-
-
-REMINDER_STYLES = {
-    "mafia": [
-        "💼 Listen up, {name}. You owe {amount} for *{event}*. Don't make me ask again.",
-        "🔫 Hey {name}, the family needs that {amount} for *{event}*. Pay up."
-    ],
-    "grandpa": [
-        "👴 Back in my day, we paid our dues, {name}. Time to send {amount} for *{event}*.",
-        "☕ {name}, I’m too old to chase payments. Please send {amount} for *{event}*."
-    ],
-    "broker": [
-        "📈 Hey {name}, think of this as an investment. Send {amount} for *{event}*.",
-        "💹 {name}, your portfolio is missing {amount} for *{event}*. Time to settle."
-    ],
-    "default": [
-        "🔔 Reminder: {name}, please pay {amount} for *{event}*."
-    ]
-}
+from utils.templates import REMINDER_STYLES, admin_confirmation_msg
 
 
 def handle_create_event(from_number: str, body: str, db: Session):
@@ -95,9 +77,12 @@ def handle_create_event(from_number: str, body: str, db: Session):
         # --- ✅ Confirmation to admin ---
         send_whatsapp_message(
             from_number,
-            f"📌 Event *{title}* created (style: {style}).\n"
-            f"⏳ Reminders every {frequency_minutes} minutes, starting {start_time.strftime('%Y-%m-%d %H:%M UTC')}.\n"
-            f"📇 Paste group members (name + phone):"
+            admin_confirmation_msg.format(
+                title=title,
+                style=style,
+                frequency_minutes=frequency_minutes,
+                start_time=start_time.strftime('%Y-%m-%d %H:%M UTC')
+            )
         )
 
     except IntegrityError:

@@ -38,12 +38,12 @@ def handle_add_members(from_number: str, body: str, db: Session):
     if body.lower().strip() == "done":
         session_store[from_number] = {"state": "IDLE"}
         send_whatsapp_message(from_number,
-            f"✅ Event *{event.title}* finalized with {len(event.members)} members.\n📇 Event ID: `{event.id}`")
+            f"✅ האירוע *{event.title}* הושלם עם {len(event.members)} משתתפים.\n📇 מזהה אירוע: `{event.id}`")
         return
 
     members = parse_members_from_text(body)
     if not members:
-        send_whatsapp_message(from_number, "❌ Couldn't parse any members. Try again.")
+        send_whatsapp_message(from_number, "❌ לא הצלחתי לקרוא משתתפים. נסה שוב.")
         return
 
     for m in members:
@@ -54,10 +54,12 @@ def handle_add_members(from_number: str, body: str, db: Session):
 
     # ✅ Confirm to admin only
     send_whatsapp_message(from_number,
-        f"✅ Added {len(members)} members to *{event.title}* so far.\nSend more or type 'done' to finish.")
+        f"✅ נוספו {len(members)} משתתפים ל-*{event.title}* עד כה.\nשלח עוד או כתוב 'done' לסיום.")
 
 def handle_mark_paid(from_number: str, db: Session):
     phone = from_number.replace("whatsapp:", "")
+
+    print(f"[LOG] Handling mark paid for {phone}")
 
     # ✅ Check if we have context (preferred event)
     event_context = session_store.get(phone, {}).get("awaiting_payment_for")
@@ -73,26 +75,26 @@ def handle_mark_paid(from_number: str, db: Session):
             db.commit()
             event = db.query(Event).filter(Event.id == member.event_id).first()
             send_whatsapp_message(from_number,
-                f"✅ Thanks {member.name}! Marked as paid for *{event.title}*.")
+                f"✅ תודה {member.name}! סומן כשולם עבור *{event.title}*.")
         else:
             send_whatsapp_message(from_number,
-                "⚠️ You’re already marked as paid for that event.")
+                "⚠️ כבר סומנת כשולם עבור האירוע הזה.")
     else:
         unpaid = db.query(Member).filter(Member.phone == phone, Member.paid == False).all()
 
         if len(unpaid) == 0:
             send_whatsapp_message(from_number,
-                "⚠️ You’re not in any unpaid events.")
+                "⚠️ אינך נמצא באירועים לא משולמים.")
         elif len(unpaid) == 1:
             member = unpaid[0]
             member.paid = True
             db.commit()
             event = db.query(Event).filter(Event.id == member.event_id).first()
             send_whatsapp_message(from_number,
-                f"✅ Thanks {member.name}! Marked as paid for *{event.title}*.")
+                f"✅ תודה {member.name}! סומן כשולם עבור *{event.title}*.")
         else:
             event_titles = ", ".join([db.query(Event).filter(Event.id == m.event_id).first().title for m in unpaid])
             send_whatsapp_message(from_number,
-                f"⚠️ You’re in multiple unpaid events: {event_titles}. Reply with the event name.")
+                f"⚠️ אתה נמצא במספר אירועים לא משולמים: {event_titles}. השב עם שם האירוע.")
             session_store[phone] = {"awaiting_event_selection": True}
 
