@@ -27,8 +27,58 @@ async def whatsapp_webhook(request: Request):
     db = SessionLocal()
     state = session_store.get(from_number, {"state": "IDLE"})
 
+    # Interactive event creation flow
+    if state.get("state") == "CREATING_EVENT_NAME":
+        session_store[from_number]["event_name"] = body
+        session_store[from_number]["state"] = "CREATING_EVENT_AMOUNT"
+        send_whatsapp_message(from_number, "מה הסכום שכל משתתף צריך לשלם? (מספר בלבד)")
+        db.close()
+        return {"status": "ok"}
+    elif state.get("state") == "CREATING_EVENT_AMOUNT":
+        try:
+            amount = float(body)
+            session_store[from_number]["event_amount"] = amount
+            session_store[from_number]["state"] = "CREATING_EVENT_STYLE"
+            send_whatsapp_message(from_number, "איזה סגנון תזכורת תרצה? (mafia, grandpa, broker) ברירת מחדל: mafia")
+        except ValueError:
+            send_whatsapp_message(from_number, "אנא הזן סכום חוקי (מספר בלבד). מה הסכום לכל משתתף?")
+        db.close()
+        return {"status": "ok"}
+    elif state.get("state") == "CREATING_EVENT_STYLE":
+        style = body if body in ["mafia", "grandpa", "broker"] else "mafia"
+        session_store[from_number]["event_style"] = style
+        session_store[from_number]["state"] = "CREATING_EVENT_FREQ"
+        send_whatsapp_message(from_number, "כל כמה דקות לשלוח תזכורת? (ברירת מחדל: 60)")
+        db.close()
+        return {"status": "ok"}
+    elif state.get("state") == "CREATING_EVENT_FREQ":
+        try:
+            freq = int(body)
+        except ValueError:
+            freq = 60
+        session_store[from_number]["event_freq"] = freq
+        session_store[from_number]["state"] = "CREATING_EVENT_DELAY"
+        send_whatsapp_message(from_number, "כמה דקות לחכות לפני התזכורת הראשונה? (ברירת מחדל: 0)")
+        db.close()
+        return {"status": "ok"}
+    elif state.get("state") == "CREATING_EVENT_DELAY":
+        try:
+            delay = int(body)
+        except ValueError:
+            delay = 0
+        session = session_store[from_number]
+        # Compose the body for handle_create_event
+        event_body = f"create event: {session['event_name']} {session['event_amount']} {session['event_style']} freq={session['event_freq']} delay={delay}"
+        session_store[from_number]["state"] = "IDLE"
+        handle_create_event(from_number, event_body, db)
+        db.close()
+        return {"status": "ok"}
+
     if body == "1":
-        send_whatsapp_message(from_number, CREATE_EVENT_INSTRUCT_MSG)
+        session_store[from_number] = {"state": "CREATING_EVENT_NAME"}
+        send_whatsapp_message(from_number, "מה שם האירוע?")
+        db.close()
+        return {"status": "ok"}
     elif body == "2":
         phone_number = from_number.replace("whatsapp:", "")
         members = db.query(Member).filter(Member.phone == phone_number).all()
