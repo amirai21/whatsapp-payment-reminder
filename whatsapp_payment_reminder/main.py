@@ -1,14 +1,14 @@
 from fastapi import FastAPI
 from dotenv import load_dotenv
 
-from routes.api import api_router
-from services.scheduler_service import scheduler, scheduled_reminder_job
+from whatsapp_payment_reminder.routes.api import api_router
+from whatsapp_payment_reminder.services.scheduler_service import scheduler, scheduled_reminder_job
 
 load_dotenv()
 
-from db.database import engine
-from db.db_models import Base
-from routes.webhooks import webhook_router as webhooks_router
+from whatsapp_payment_reminder.db.database import engine
+from whatsapp_payment_reminder.db.db_models import Base
+from whatsapp_payment_reminder.routes.webhooks import webhook_router as webhooks_router
 
 Base.metadata.create_all(bind=engine)
 
@@ -26,5 +26,3 @@ def start_scheduler():
 @app.on_event("shutdown")
 def shutdown_scheduler():
     scheduler.shutdown()
-
-

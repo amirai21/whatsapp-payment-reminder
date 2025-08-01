@@ -3,9 +3,9 @@ from fastapi import APIRouter
 
 load_dotenv()
 
-from db.database import SessionLocal
-from db.db_models import Event
-from services.events_service import send_event_reminders
+from whatsapp_payment_reminder.db.database import SessionLocal
+from whatsapp_payment_reminder.db.db_models import Event
+from whatsapp_payment_reminder.services.events_service import send_event_reminders
 
 # =======================
 # 📡 Manual Trigger Endpoint

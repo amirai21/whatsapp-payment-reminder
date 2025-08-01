@@ -1,12 +1,12 @@
 from sqlalchemy.orm import Session
-from db.db_models import Event, Member, Admin
+from whatsapp_payment_reminder.db.db_models import Event, Member, Admin
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timedelta
 import random
 from fastapi import HTTPException
-from services.session_store import session_store
-from services.whatsapp_utils import send_whatsapp_message
-from utils.templates import REMINDER_STYLES, admin_confirmation_msg
+from whatsapp_payment_reminder.services.session_store import session_store
+from whatsapp_payment_reminder.services.whatsapp_utils import send_whatsapp_message
+from whatsapp_payment_reminder.utils.templates import REMINDER_STYLES, admin_confirmation_msg
 
 
 def handle_create_event(from_number: str, body: str, db: Session):

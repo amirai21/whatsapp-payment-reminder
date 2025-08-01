@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
-from db.db_models import Event, Member, Admin
-from services.whatsapp_utils import send_whatsapp_message
-from services.session_store import session_store
+from whatsapp_payment_reminder.db.db_models import Event, Member, Admin
+from whatsapp_payment_reminder.services.whatsapp_utils import send_whatsapp_message
+from whatsapp_payment_reminder.services.session_store import session_store
 from typing import List
 import re
 

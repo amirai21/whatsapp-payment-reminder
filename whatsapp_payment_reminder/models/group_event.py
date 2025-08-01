@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import List
 
-from models.member import Member
+from whatsapp_payment_reminder.models.member import Member
 
 
 class GroupEvent(BaseModel):
