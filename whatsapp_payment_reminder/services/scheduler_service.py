@@ -1,30 +1,42 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime
 
-from whatsapp_payment_reminder.db.database import get_session_local
+from whatsapp_payment_reminder.services.db_service import get_all_events
 from whatsapp_payment_reminder.services.events_service import send_event_reminders
-from whatsapp_payment_reminder.db.db_models import Event
 
-SessionLocal = get_session_local()
 
-scheduler = BackgroundScheduler()
+class ReminderScheduler:
+    """Background scheduler that periodically checks events and sends reminders."""
 
-def scheduled_reminder_job():
-    """Periodic job to send reminders for all events"""
-    db = SessionLocal()
-    now = datetime.utcnow()
-    events = db.query(Event).all()
+    def __init__(self, interval_minutes: int = 1):
 
-    for event in events:
-        # Skip until event start_time
-        if now < event.start_time:
-            continue
+        self.interval_minutes = interval_minutes
+        self._scheduler = BackgroundScheduler()
+        # Schedule the job
+        self._scheduler.add_job(self._reminder_cycle, "interval", minutes=self.interval_minutes, id="reminder_cycle")
 
-        # ⏱ Calculate how many minutes have passed since the event start
-        time_since_start = (now - event.start_time).total_seconds() / 60  # convert to minutes
+    def start(self) -> None:
+        """Start the background scheduler (non-blocking)."""
+        if not self._scheduler.running:
+            self._scheduler.start()
 
-        # ✅ Trigger if current time is within 1-minute window of the next reminder
-        if time_since_start % event.scheduler_interval < 1:
-            send_event_reminders(event.id, db)
+    def shutdown(self) -> None:
+        """Shut down the scheduler gracefully."""
+        if self._scheduler.running:
+            self._scheduler.shutdown()
 
-    db.close()
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+    def _reminder_cycle(self) -> None:
+        """Send reminders for all events that are due in this cycle."""
+        events = get_all_events()
+        now = datetime.utcnow()
+        for event in events:
+            if now < event.start_time:
+                continue
+
+            time_since_start = (now - event.start_time).total_seconds() / 60
+
+            if time_since_start % event.scheduler_interval < 1:
+                send_event_reminders(event.id)

@@ -19,9 +19,7 @@ api_router = APIRouter()
 
 @api_router.post("/send_reminders/{event_id}")
 async def trigger_event_reminders(event_id: str):
-    db = SessionLocal()
-    res = send_event_reminders(event_id, db)
-    db.close()
+    res = send_event_reminders(event_id)
     return res
 
 

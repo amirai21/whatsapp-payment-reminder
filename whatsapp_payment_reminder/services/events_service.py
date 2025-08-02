@@ -1,5 +1,3 @@
-from sqlalchemy.orm import Session
-from whatsapp_payment_reminder.db.db_models import Event, Member, Admin
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timedelta
 import random
@@ -7,9 +5,10 @@ from fastapi import HTTPException
 from whatsapp_payment_reminder.services.session_store import session_store
 from whatsapp_payment_reminder.services.whatsapp_utils import send_whatsapp_message
 from whatsapp_payment_reminder.utils.templates import REMINDER_STYLES, admin_confirmation_msg
+from whatsapp_payment_reminder.services import db_service
 
 
-def handle_create_event(from_number: str, body: str, db: Session):
+def handle_create_event(from_number: str, body: str):
     try:
         # --- Split command & arguments ---
         _, content = body.split(":", 1)
@@ -60,26 +59,15 @@ def handle_create_event(from_number: str, body: str, db: Session):
         event_id = from_number.replace("whatsapp:", "") + "-" + title.lower()
 
         # --- Admin lookup or creation ---
-        admin_phone = from_number.replace("whatsapp:", "")
-        admin = db.query(Admin).filter(Admin.phone == admin_phone).first()
-        if not admin:
-            admin = Admin(phone=admin_phone)
-            db.add(admin)
-            db.commit()
-            db.refresh(admin)
-
-        # --- ✅ Insert new event ---
-        new_event = Event(
-            id=event_id,
+        # --- ✅ Create event in DB ---
+        new_event = db_service.create_event(
+            from_number=from_number,
             title=title,
             amount=amount,
             style=style,
-            scheduler_interval=frequency_minutes,  # ⚠️ store minutes
+            frequency_minutes=frequency_minutes,
             start_time=start_time,
-            admin_id=admin.id
         )
-        db.add(new_event)
-        db.commit()
 
         # --- ✅ Track state for adding members ---
         session_store[from_number] = {"state": "ADDING_MEMBERS", "event_id": event_id}
@@ -96,23 +84,21 @@ def handle_create_event(from_number: str, body: str, db: Session):
         )
 
     except IntegrityError:
-        db.rollback()
         send_whatsapp_message(
             from_number,
             f"⚠️ An event with the name *{title}* already exists for you.\n"
             f"🛑 Choose another title or delete the existing one first."
         )
     except Exception as e:
-        db.rollback()
         send_whatsapp_message(from_number, f"❌ Unexpected error: {str(e)}")
 
-def send_event_reminders(event_id: str, db: Session):
-    """Send reminders for an event to all unpaid members"""
-    event = db.query(Event).filter(Event.id == event_id).first()
+def send_event_reminders(event_id: str):
+    """Send WhatsApp reminders to unpaid members for the given event."""
+    event = db_service.get_event(event_id)
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
 
-    unpaid_members = db.query(Member).filter(Member.event_id == event_id, Member.paid == False).all()
+    unpaid_members = db_service.get_unpaid_members(event_id)
     for member in unpaid_members:
         style = event.style if event.style in REMINDER_STYLES else "default"
         template = random.choice(REMINDER_STYLES[style])

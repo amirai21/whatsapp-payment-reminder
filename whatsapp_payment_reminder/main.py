@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 
 from whatsapp_payment_reminder.db.database import get_engine
 from whatsapp_payment_reminder.routes.api import api_router
-from whatsapp_payment_reminder.services.scheduler_service import scheduler, scheduled_reminder_job
+from whatsapp_payment_reminder.services.scheduler_service import ReminderScheduler
 
 load_dotenv()
 
@@ -17,6 +17,8 @@ app = FastAPI()
 app.include_router(webhooks_router)
 app.include_router(api_router)
 
+reminder_scheduler = ReminderScheduler(interval_minutes=1)
+
 
 @app.get("/health")
 def health_check():
@@ -25,11 +27,10 @@ def health_check():
 
 @app.on_event("startup")
 def start_scheduler():
-    scheduler.add_job(scheduled_reminder_job, "interval", minutes=1)  # dev = every 1 minute
-    scheduler.start()
+    reminder_scheduler.start()
     print("Scheduler started! It will run every minute to send reminders.")
 
 
 @app.on_event("shutdown")
 def shutdown_scheduler():
-    scheduler.shutdown()
+    reminder_scheduler.shutdown()
