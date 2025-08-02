@@ -1,8 +1,9 @@
 from sqlalchemy import Column, Integer, String, Boolean, Float, ForeignKey, DateTime
-from sqlalchemy.orm import relationship, declarative_base
+from sqlalchemy.orm import relationship
 from datetime import datetime
 
-Base = declarative_base()
+from whatsapp_payment_reminder.db.database import Base
+
 
 class Admin(Base):
     __tablename__ = "admins"

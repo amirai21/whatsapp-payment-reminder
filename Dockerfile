@@ -20,4 +20,4 @@ COPY whatsapp_payment_reminder ./whatsapp_payment_reminder
 
 USER appuser
 EXPOSE 8000
-CMD ["uvicorn", "whatsapp_payment_reminder.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "uvicorn whatsapp_payment_reminder.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

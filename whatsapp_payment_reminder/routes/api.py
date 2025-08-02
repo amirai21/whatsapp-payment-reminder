@@ -1,11 +1,14 @@
 from dotenv import load_dotenv
 from fastapi import APIRouter
 
+from whatsapp_payment_reminder.db.database import get_session_local
+
 load_dotenv()
 
-from whatsapp_payment_reminder.db.database import SessionLocal
 from whatsapp_payment_reminder.db.db_models import Event
 from whatsapp_payment_reminder.services.events_service import send_event_reminders
+
+SessionLocal = get_session_local()
 
 # =======================
 # 📡 Manual Trigger Endpoint

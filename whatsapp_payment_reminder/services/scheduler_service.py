@@ -1,8 +1,11 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime
-from whatsapp_payment_reminder.db.database import SessionLocal
+
+from whatsapp_payment_reminder.db.database import get_session_local
 from whatsapp_payment_reminder.services.events_service import send_event_reminders
 from whatsapp_payment_reminder.db.db_models import Event
+
+SessionLocal = get_session_local()
 
 scheduler = BackgroundScheduler()
 

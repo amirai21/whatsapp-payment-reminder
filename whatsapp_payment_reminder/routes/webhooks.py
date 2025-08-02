@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Request
+
+from whatsapp_payment_reminder.db.database import get_session_local
 from whatsapp_payment_reminder.db.db_models import Event, Member
-from whatsapp_payment_reminder.db.database import SessionLocal
 from whatsapp_payment_reminder.services.whatsapp_utils import send_whatsapp_message
 from whatsapp_payment_reminder.services.session_store import session_store
 from whatsapp_payment_reminder.services.events_service import handle_create_event
 from whatsapp_payment_reminder.services.members_service import handle_add_members, handle_mark_paid
 from whatsapp_payment_reminder.utils.templates import MAIN_MENU_MSG, HELP_MSG
 
-
+SessionLocal = get_session_local()
 webhook_router = APIRouter()
 
 
