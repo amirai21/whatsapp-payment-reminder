@@ -17,7 +17,7 @@ app = FastAPI()
 app.include_router(webhooks_router)
 app.include_router(api_router)
 
-reminder_scheduler = ReminderScheduler(interval_minutes=1)
+reminder_scheduler = ReminderScheduler(interval_minutes=100)
 
 
 @app.get("/health")
