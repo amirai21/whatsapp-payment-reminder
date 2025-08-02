@@ -18,6 +18,11 @@ app.include_router(webhooks_router)
 app.include_router(api_router)
 
 
+@app.get("/health")
+def health_check():
+    return {"status": "ok", "version": "1.0.0"}
+
+
 @app.on_event("startup")
 def start_scheduler():
     scheduler.add_job(scheduled_reminder_job, "interval", minutes=1)  # dev = every 1 minute
